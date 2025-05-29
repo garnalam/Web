@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ước Lượng Mực Nước</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Header -->
+  <header class="header-section py-16 text-center">
+    <h1 class="text-5xl font-bold title mb-4">Test</h1>
+  </header>
+
+  <!-- Upload Section -->
+  <section class="upload-section py-16">
+    <div class="max-w-md w-full upload-box p-8 mx-auto">
+      <h2 class="text-3xl font-bold text-center title mb-6">Ước Lượng Mực Nước Của Con Sông</h2>
+      
+      <!-- Form upload -->
+      <form id="uploadForm" class="space-y-6">
+        <!-- Chọn file ảnh -->
+        <div class="input-wrapper">
+          <label for="image" class="block text-sm font-medium text-gray-300 mb-2">Ảnh Con Sông Từ Trên Cao</label>
+          <input type="file" id="image" name="image" accept="image/*" 
+                 class="custom-input w-full p-3 pl-10 border rounded-lg">
+          <svg class="input-icon w-5 h-5 absolute top-[52px] left-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </div>
+
+        <!-- Preview ảnh -->
+        <div id="preview" class="mt-4 flex justify-center">
+          <img id="preview-image" class="max-w-full h-auto rounded-lg shadow-lg hidden" alt="Preview">
+        </div>
+
+        <!-- Nhập ngày chụp -->
+        <div class="input-wrapper">
+          <label for="datetime" class="block text-sm font-medium text-gray-300 mb-2">Ngày Chụp Ảnh Con Sông</label>
+          <input type="text" id="datetime" name="datetime" placeholder="28/05/2025" 
+                 class="custom-input w-full p-3 pl-10 border rounded-lg">
+          <svg class="input-icon w-5 h-5 absolute top-[52px] left-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </div>
+
+        <!-- Số ngày cần ước lượng -->
+        <div class="input-wrapper">
+          <label for="days" class="block text-sm font-medium text-gray-300 mb-2">Số Ngày Tiếp Theo Cần Ước Lượng</label>
+          <input type="number" id="days" name="days" min="1" max="30" value="1" 
+                 class="custom-input w-full p-3 pl-10 border rounded-lg">
+          <svg class="input-icon w-5 h-5 absolute top-[52px] left-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+        </div>
+
+        <!-- Nút xác nhận -->
+        <button type="submit" class="btn-upload w-full text-white font-semibold py-3 rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          <span id="btn-text">Xác Nhận</span>
+          <div id="spinner" class="spinner"></div>
+        </button>
+      </form>
+
+      <!-- Khu vực hiển thị kết quả -->
+      <div id="result" class="mt-6 text-center"></div>
+
+      <!-- Thanh tiến trình -->
+      <div id="progress-container" class="mt-4 hidden">
+        <div class="w-full bg-gray-700 rounded-full h-4">
+          <div id="progress-bar" class="bg-gold h-4 rounded-full" style="width: 0%"></div>
+        </div>
+        <p id="progress-text" class="text-gray-300 mt-2 text-center">Đang ước lượng: 0%</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Calendar Section -->
+  <section id="calendar-section" class="calendar-section py-16 hidden">
+    <div class="max-w-md w-full calendar-box p-8 mx-auto">
+      <h3 class="text-xl font-semibold text-center text-gold mb-4">Ước Lượng Mực Nước</h3>
+      <div id="calendar" class="grid grid-cols-7 gap-2"></div>
+      <div id="water-level" class="mt-4 text-center text-gray-300"></div>
+    </div>
+  </section>
+
+  <!-- Hướng dẫn sử dụng -->
+  <section class="guide-section py-16">
+    <div class="max-w-4xl mx-auto px-4">
+      <h2 class="text-3xl font-bold text-center title mb-8">Hướng Dẫn Sử Dụng</h2>
+      <div class="space-y-6 text-gray-300">
+        <div class="guide-item p-6 rounded-lg">
+          <h3 class="text-xl font-semibold text-gold mb-2">Bước 1: Chọn ảnh</h3>
+          <p>Chọn một ảnh con sông từ trên cao để hệ thống phân tích mực nước.</p>
+        </div>
+        <div class="guide-item p-6 rounded-lg">
+          <h3 class="text-xl font-semibold text-gold mb-2">Bước 2: Nhập ngày chụp</h3>
+          <p>Nhập ngày chụp ảnh theo định dạng DD/MM/YYYY (ví dụ: 28/05/2025).</p>
+        </div>
+        <div class="guide-item p-6 rounded-lg">
+          <h3 class="text-xl font-semibold text-gold mb-2">Bước 3: Chọn số ngày</h3>
+          <p>Chọn số ngày cần ước lượng mực nước (tối thiểu 1, tối đa 30).</p>
+        </div>
+        <div class="guide-item p-6 rounded-lg">
+          <h3 class="text-xl font-semibold text-gold mb-2">Bước 4: Xác nhận</h3>
+          <p>Nhấn "Xác Nhận" để gửi dữ liệu. Hệ thống sẽ ước lượng và hiển thị kết quả.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Include Moment.js from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

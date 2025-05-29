@@ -1,0 +1,9 @@
+{
+  "file_name": "1_B640x_13.jpg",
+  "date": "23/04/98",
+  "list_value": [
+    ["temperature", "25"],
+    ["humidity", "60"],
+    ["wind_speed", "15"]
+  ]
+}
