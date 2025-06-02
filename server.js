@@ -1,11 +1,11 @@
 const express = require('express');
-const mongoose = require('mongoose'); // MongoDB
-const multer = require('multer'); // Middleware để xử lý file upload
-const dotenv = require('dotenv'); // Thư viện để quản lý biến môi trường .env
-const moment = require('moment'); // Thư viện để xử lý ngày tháng
-const path = require('path'); // Thư viện để xử lý đường dẫn file
-const fs = require('fs').promises; // Thư viện để xử lý file hệ thống
-const mime = require('mime-types'); // Thư viện để xác định loại MIME của file (jpg, png, v.v.)
+const mongoose = require('mongoose');
+const multer = require('multer');
+const dotenv = require('dotenv');
+const moment = require('moment');
+const path = require('path');
+const fs = require('fs').promises;
+const mime = require('mime-types');
 
 dotenv.config();
 
@@ -89,6 +89,31 @@ const metadataSchema = new mongoose.Schema({
 }, { collection: 'metadata', versionKey: false });
 
 const Metadata = mongoose.model('Metadata', metadataSchema);
+
+// Định nghĩa schema cho collection prediction
+const predictionSchema = new mongoose.Schema({
+  id_metadata: [{
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    ref: 'metadata'
+  }],
+  id_image: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    ref: 'image'
+  },
+  predicted_date: {
+    type: String,
+    required: true,
+    match: /^\d{2}\/\d{2}\/\d{2}$/
+  },
+  water_estimate: {
+    type: Number,
+    required: true
+  }
+}, { collection: 'prediction', versionKey: false });
+
+const Prediction = mongoose.model('Prediction', predictionSchema);
 
 // Cấu hình Multer
 const storage = multer.memoryStorage();
@@ -242,6 +267,168 @@ app.post('/upload', upload.single('image'), async (req, res) => {
   }
 });
 
+// Route lưu ảnh mới (thay thế /upload)
+app.post('/save-image', upload.single('image'), async (req, res) => {
+  try {
+    console.log('Vào route /save-image');
+    console.log('Request body:', req.body);
+    console.log('Request file:', req.file);
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'Vui lòng cung cấp file ảnh' });
+    }
+    if (!req.body.mmyy) {
+      return res.status(400).json({ message: 'Vui lòng cung cấp tháng/năm (mm/yy)' });
+    }
+
+    if (!req.file.buffer || req.file.buffer.length === 0) {
+      return res.status(400).json({ message: 'File ảnh rỗng hoặc không hợp lệ' });
+    }
+    console.log('Kích thước file:', req.file.buffer.length, 'bytes');
+
+    const mmyy = req.body.mmyy;
+    if (!mmyy.match(/^\d{2}\/\d{2}$/)) {
+      return res.status(400).json({ message: 'Định dạng mm/yy không hợp lệ. Sử dụng mm/yy (ví dụ: 09/24)' });
+    }
+
+    const year = parseInt(`20${mmyy.split('/')[1]}`);
+    const month = parseInt(mmyy.split('/')[0]) - 1; // moment tháng từ 0-11
+    const isoDate = moment({ year, month, day: 1 }).toDate();
+
+    if (!gfsBucket) {
+      console.error('GridFSBucket chưa được khởi tạo');
+      throw new Error('GridFSBucket chưa được khởi tạo. Vui lòng kiểm tra kết nối MongoDB.');
+    }
+
+    let mimeType = mime.lookup(req.file.originalname) || req.file.mimetype;
+    if (mimeType === 'application/octet-stream') {
+      const extension = path.extname(req.file.originalname).toLowerCase();
+      mimeType = mime.lookup(extension) || 'image/png';
+    }
+    console.log('MIME type:', mimeType);
+
+    const uploadStream = gfsBucket.openUploadStream(req.file.originalname, {
+      chunkSizeBytes: 261120,
+      metadata: {
+        mimeType: mimeType,
+        type: 'image',
+        datetime: isoDate
+      }
+    });
+
+    const writePromise = new Promise((resolve, reject) => {
+      uploadStream.write(req.file.buffer, (error) => {
+        if (error) {
+          console.error('Lỗi chi tiết khi ghi dữ liệu vào GridFS stream:', error);
+          reject(new Error(`Lỗi khi ghi dữ liệu vào GridFS stream: ${error.message}`));
+        } else {
+          resolve(true);
+        }
+      });
+    });
+
+    await writePromise;
+    uploadStream.end();
+
+    const fileId = await new Promise((resolve, reject) => {
+      uploadStream.on('finish', () => {
+        console.log('Upload stream hoàn tất, fileId:', uploadStream.id);
+        resolve(uploadStream.id);
+      });
+      uploadStream.on('error', (error) => {
+        console.error('Lỗi trong upload stream:', error);
+        reject(error);
+      });
+    });
+
+    const newImage = new Image({
+      date: isoDate,
+      'mm/yy': mmyy,
+      id_file: fileId,
+      mask_image: null
+    });
+
+    await newImage.save();
+    console.log('Đã lưu vào collection image:', newImage);
+
+    res.status(201).json({
+      message: 'Lưu ảnh thành công',
+      image_id: newImage._id.toString()
+    });
+  } catch (error) {
+    console.error('Lỗi khi lưu ảnh:', error);
+    res.status(500).json({ message: 'Lỗi khi lưu ảnh', error: error.message });
+  }
+});
+
+// Route lưu metadata
+app.post('/save-metadata', async (req, res) => {
+  try {
+    const { records } = req.body;
+    if (!Array.isArray(records) || records.length === 0) {
+      return res.status(400).json({ message: 'Dữ liệu metadata không hợp lệ' });
+    }
+
+    const savedRecords = await Metadata.insertMany(records);
+    const metadataIds = savedRecords.map(record => record._id.toString());
+    console.log(`Đã lưu ${savedRecords.length} bản ghi metadata`);
+    res.status(201).json({ message: 'Lưu metadata thành công', metadata_ids: metadataIds });
+  } catch (error) {
+    console.error('Lỗi khi lưu metadata:', error);
+    res.status(500).json({ message: 'Lỗi khi lưu metadata', error: error.message });
+  }
+});
+
+// Route dự đoán (random)
+app.post('/predict', async (req, res) => {
+  try {
+    const { prediction_dates } = req.body;
+    if (!Array.isArray(prediction_dates) || prediction_dates.length === 0) {
+      return res.status(400).json({ message: 'Danh sách ngày dự đoán không hợp lệ' });
+    }
+
+    const results = prediction_dates.map(date => {
+      const waterLevel = Math.floor(Math.random() * 900) + 100; // Random 100-999
+      return [date, waterLevel];
+    });
+
+    res.status(200).json({ message: 'Dự đoán thành công', results });
+  } catch (error) {
+    console.error('Lỗi khi dự đoán:', error);
+    res.status(500).json({ message: 'Lỗi khi dự đoán', error: error.message });
+  }
+});
+
+// Route lưu prediction
+app.post('/save-prediction', async (req, res) => {
+  try {
+    const { metadata_ids, image_id, predictions } = req.body;
+    if (!Array.isArray(metadata_ids) || metadata_ids.length === 0) {
+      return res.status(400).json({ message: 'Danh sách metadata_ids không hợp lệ' });
+    }
+    if (!image_id) {
+      return res.status(400).json({ message: 'image_id không hợp lệ' });
+    }
+    if (!Array.isArray(predictions) || predictions.length === 0) {
+      return res.status(400).json({ message: 'Danh sách predictions không hợp lệ' });
+    }
+
+    const predictionRecords = predictions.map(prediction => ({
+      id_metadata: metadata_ids.map(id => new mongoose.Types.ObjectId(id)),
+      id_image: new mongoose.Types.ObjectId(image_id),
+      predicted_date: prediction[0], // Định dạng dd/mm/yy
+      water_estimate: prediction[1]
+    }));
+
+    const savedPredictions = await Prediction.insertMany(predictionRecords);
+    console.log(`Đã lưu ${savedPredictions.length} bản ghi prediction`);
+    res.status(201).json({ message: 'Lưu prediction thành công' });
+  } catch (error) {
+    console.error('Lỗi khi lưu prediction:', error);
+    res.status(500).json({ message: 'Lỗi khi lưu prediction', error: error.message });
+  }
+});
+
 // Route tải file JSON chunk
 app.get('/download-chunk/:fileName', async (req, res) => {
   try {
@@ -265,54 +452,23 @@ app.get('/download-chunk/:fileName', async (req, res) => {
   }
 });
 
-// Route tạo metadata
-app.post('/update-metadata', async (req, res) => {
+// Route làm trống dữ liệu
+app.post('/clean-all-data', async (req, res) => {
   try {
-    const { id_image, date, list_value } = req.body;
-
-    if (!id_image || !date || !list_value || !Array.isArray(list_value)) {
-      return res.status(400).json({ message: 'Thiếu hoặc sai định dạng: id_image, date, hoặc list_value' });
-    }
-
-    let idImage;
-    try {
-      idImage = new mongoose.Types.ObjectId(id_image);
-    } catch (error) {
-      return res.status(400).json({ message: 'id_image không hợp lệ' });
-    }
-
-    const image = await Image.findById(idImage);
-    if (!image) {
-      return res.status(404).json({ message: 'Không tìm thấy document trong collection image với id_image này' });
-    }
-
-    const dateRegex = /^\d{2}\/\d{2}\/\d{2}$/;
-    if (!dateRegex.test(date)) {
-      return res.status(400).json({ message: 'Định dạng ngày không hợp lệ. Sử dụng dd/mm/yy (ví dụ: 28/05/25)' });
-    }
-
-    const dateParts = date.split('/');
-    const dd = dateParts[0];
-    const mmYY = `${dateParts[1]}/${dateParts[2]}`;
-
-    const listValue = list_value.map(([name, value]) => {
-      if (!name || !value) {
-        throw new Error('Mỗi cặp trong list_value phải có name và value');
-      }
-      return { name: name.toString(), value: value.toString() };
-    });
-
-    const metadataDoc = await Metadata.findOneAndUpdate(
-      { id_image: idImage },
-      { $set: { id_image: idImage, dd, 'mm/yy': mmYY, list_value: listValue } },
-      { upsert: true, new: true }
-    );
-
-    console.log('Đã cập nhật metadata:', metadataDoc);
-    res.status(200).json({ message: 'Cập nhật metadata thành công', metadata: metadataDoc });
+    const imageResult = await Image.deleteMany({});
+    console.log(`Đã xóa ${imageResult.deletedCount} bản ghi trong collection image`);
+    const metadataResult = await Metadata.deleteMany({});
+    console.log(`Đã xóa ${metadataResult.deletedCount} bản ghi trong collection metadata`);
+    const predictionResult = await Prediction.deleteMany({});
+    console.log(`Đã xóa ${predictionResult.deletedCount} bản ghi trong collection prediction`);
+    const filesResult = await conn.db.collection('fs.files').deleteMany({});
+    console.log(`Đã xóa ${filesResult.deletedCount} bản ghi trong fs.files`);
+    const chunksResult = await conn.db.collection('fs.chunks').deleteMany({});
+    console.log(`Đã xóa ${chunksResult.deletedCount} bản ghi trong fs.chunks`);
+    res.status(200).json({ message: 'Đã làm trống tất cả dữ liệu thành công' });
   } catch (error) {
-    console.error('Lỗi khi cập nhật metadata:', error);
-    res.status(500).json({ message: 'Lỗi khi cập nhật metadata', error: error.message });
+    console.error('Lỗi khi làm trống dữ liệu:', error);
+    res.status(500).json({ message: 'Lỗi khi làm trống dữ liệu', error: error.message });
   }
 });
 
@@ -354,111 +510,10 @@ app.get('/get-image-records', async (req, res) => {
     });
 
     console.log('Số bản ghi trả về:', records.length);
-    res.status(200).json({ records });
+    res.status(200).json({ message: 'Lấy danh sách bản ghi image thành công', records });
   } catch (error) {
     console.error('Lỗi khi lấy danh sách bản ghi image:', error);
     res.status(500).json({ message: 'Lỗi khi lấy danh sách bản ghi image', error: error.message });
-  }
-});
-
-// Route xóa bản ghi
-app.post('/delete-record', async (req, res) => {
-  try {
-    const { id, type } = req.body;
-    console.log('Nhận yêu cầu xóa bản ghi:', { id, type });
-
-    if (!id || !type) {
-      console.error('Thiếu id hoặc type trong payload');
-      return res.status(400).json({ message: 'Thiếu id hoặc type' });
-    }
-
-    if (type === 'image') {
-      let idImage;
-      try {
-        idImage = new mongoose.Types.ObjectId(id);
-        console.log('Đã parse idImage thành ObjectId:', idImage);
-      } catch (error) {
-        console.error('ID không hợp lệ:', id, error);
-        return res.status(400).json({ message: 'ID không hợp lệ' });
-      }
-
-      const image = await Image.findById(idImage);
-      if (!image) {
-        console.error('Không tìm thấy bản ghi trong collection image với id:', idImage);
-        return res.status(404).json({ message: 'Không tìm thấy bản ghi trong collection image' });
-      }
-      console.log('Tìm thấy bản ghi image:', image);
-
-      // Xóa file từ GridFS
-      if (!gfsBucket) {
-        console.error('GridFSBucket chưa được khởi tạo');
-        throw new Error('GridFSBucket chưa được khởi tạo. Vui lòng kiểm tra kết nối MongoDB.');
-      }
-
-      try {
-        await gfsBucket.delete(new mongoose.Types.ObjectId(image.id_file));
-        console.log(`Đã xóa file ${image.id_file} từ GridFS`);
-      } catch (error) {
-        console.error(`Lỗi khi xóa file ${image.id_file} từ GridFS:`, error);
-        throw new Error(`Lỗi khi xóa file từ GridFS: ${error.message}`);
-      }
-
-      // Xóa bản ghi từ collection image
-      const imageDeleteResult = await Image.deleteOne({ _id: idImage });
-      console.log(`Kết quả xóa bản ghi image:`, imageDeleteResult);
-      if (imageDeleteResult.deletedCount === 0) {
-        console.error('Không xóa được bản ghi image với id:', idImage);
-        throw new Error('Không xóa được bản ghi trong collection image');
-      }
-      console.log(`Đã xóa bản ghi image với id: ${idImage}`);
-
-      // Xóa metadata liên quan
-      const metadataDeleteResult = await Metadata.deleteOne({ id_image: idImage });
-      console.log(`Kết quả xóa metadata:`, metadataDeleteResult);
-      if (metadataDeleteResult.deletedCount === 0) {
-        console.warn('Không tìm thấy metadata liên quan để xóa với id_image:', idImage);
-      } else {
-        console.log(`Đã xóa metadata liên quan với id_image: ${idImage}`);
-      }
-
-      res.status(200).json({ message: 'Xóa bản ghi image thành công' });
-    } else {
-      console.error('Loại bản ghi không hợp lệ:', type);
-      res.status(400).json({ message: 'Loại bản ghi không hợp lệ' });
-    }
-  } catch (error) {
-    console.error('Lỗi khi xóa bản ghi:', error);
-    res.status(500).json({ message: 'Lỗi khi xóa bản ghi', error: error.message });
-  }
-});
-
-// Route làm trống dữ liệu
-app.post('/clean-all-data', async (req, res) => {
-  try {
-    const imageResult = await Image.deleteMany({});
-    console.log(`Đã xóa ${imageResult.deletedCount} bản ghi trong collection image`);
-    const metadataResult = await Metadata.deleteMany({});
-    console.log(`Đã xóa ${metadataResult.deletedCount} bản ghi trong collection metadata`);
-    const filesResult = await conn.db.collection('fs.files').deleteMany({});
-    console.log(`Đã xóa ${filesResult.deletedCount} bản ghi trong fs.files`);
-    const chunksResult = await conn.db.collection('fs.chunks').deleteMany({});
-    console.log(`Đã xóa ${chunksResult.deletedCount} bản ghi trong fs.chunks`);
-    res.status(200).json({ message: 'Đã làm trống tất cả dữ liệu thành công' });
-  } catch (error) {
-    console.error('Lỗi khi làm trống dữ liệu:', error);
-    res.status(500).json({ message: 'Lỗi khi làm trống dữ liệu', error: error.message });
-  }
-});
-
-// Route lấy danh sách bản ghi metadata
-app.get('/get-metadata-records', async (req, res) => {
-  try {
-    const records = await Metadata.find().lean();
-    console.log('Số bản ghi metadata:', records.length);
-    res.status(200).json({ records });
-  } catch (error) {
-    console.error('Lỗi khi lấy danh sách metadata:', error);
-    res.status(500).json({ message: 'Lỗi khi lấy danh sách metadata', error: error.message });
   }
 });
 
