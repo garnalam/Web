@@ -1,17 +1,24 @@
 document.addEventListener('DOMContentLoaded', () => {
   const imageInput = document.getElementById('image-input');
+  const imagePreview = document.getElementById('image-preview');
   const csvInput = document.getElementById('csv-input');
   const mmyyInput = document.getElementById('mmyy-input');
   const predictBtn = document.getElementById('predict-btn');
-  const logSection = document.getElementById('log-messages');
-  const calendarSection = document.getElementById('calendar-section');
+  const logOverlay = document.getElementById('log-overlay');
+  const logMessages = document.getElementById('log-messages');
+  const logCloseBtn = document.getElementById('log-close');
+  const calendarOverlay = document.getElementById('calendar-overlay');
   const calendarGrid = document.getElementById('calendar-grid');
+  const calendarCloseBtn = document.getElementById('calendar-close');
   const confirmDatesBtn = document.getElementById('confirm-dates-btn');
-  const progressSection = document.getElementById('progress-section');
+  const progressOverlay = document.getElementById('progress-overlay');
   const progressBar = document.getElementById('progress-bar');
-  const resultSection = document.getElementById('result-section');
+  const resultOverlay = document.getElementById('result-overlay');
+  const calendarGridResult = document.getElementById('calendar-grid-result');
   const resultDetails = document.getElementById('result-details');
   const downloadResultBtn = document.getElementById('download-result-btn');
+  const resultCloseBtn = document.getElementById('result-close');
+  const downloadSampleCsvBtn = document.getElementById('download-sample-csv');
 
   let csvData = [];
   let lastDate = null;
@@ -22,12 +29,60 @@ document.addEventListener('DOMContentLoaded', () => {
   let metadataIds = [];
   let imageId = null;
 
+  // Hiển thị ảnh preview khi chọn file
+  imageInput.addEventListener('change', () => {
+    const file = imageInput.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        imagePreview.src = e.target.result;
+        imagePreview.classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+    } else {
+      imagePreview.classList.add('hidden');
+    }
+  });
+
+  // Tải file CSV minh họa
+  downloadSampleCsvBtn.addEventListener('click', () => {
+    const sampleCsvContent = `dd/mm/yy,value
+22/09/24,[("area", 10000), ("depth", 2.5), ("flow", 500)]
+23/09/24,[("area", 11000), ("depth", 2.6), ("flow", 510)]
+24/09/24,[("area", 12000), ("depth", 2.7), ("flow", 520)]
+25/09/24,[("area", 13000), ("depth", 2.8), ("flow", 530)]`;
+    const csvFile = new Blob([sampleCsvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(csvFile);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'sample_metadata.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  });
+
+  // Đóng overlay
+  logCloseBtn.addEventListener('click', () => {
+    logOverlay.style.display = 'none';
+  });
+
+  calendarCloseBtn.addEventListener('click', () => {
+    calendarOverlay.style.display = 'none';
+    selectedStartDate = null;
+    selectedEndDate = null;
+    const days = document.querySelectorAll('.calendar-day');
+    days.forEach(day => day.classList.remove('selected'));
+  });
+
+  resultCloseBtn.addEventListener('click', () => {
+    resultOverlay.style.display = 'none';
+  });
+
   // Xử lý nút Predict
   predictBtn.addEventListener('click', async () => {
-    logSection.innerHTML = '';
-    calendarSection.style.display = 'none';
-    progressSection.style.display = 'none';
-    resultSection.style.display = 'none';
+    logMessages.innerHTML = '';
+    calendarOverlay.style.display = 'none';
+    progressOverlay.style.display = 'none';
+    resultOverlay.style.display = 'none';
     csvData = [];
     lastDate = null;
     selectedStartDate = null;
@@ -36,6 +91,9 @@ document.addEventListener('DOMContentLoaded', () => {
     predictionResults = [];
     metadataIds = [];
     imageId = null;
+
+    // Hiển thị overlay log
+    logOverlay.style.display = 'flex';
 
     // Kiểm tra ảnh
     if (!imageInput.files || imageInput.files.length === 0) {
@@ -155,10 +213,11 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Hiển thị lịch 30 ngày tiếp theo
+    // Đóng overlay log và mở overlay lịch
+    logOverlay.style.display = 'none';
+    calendarOverlay.style.display = 'flex';
     lastDate = dates[dates.length - 1];
     displayCalendar(lastDate);
-    calendarSection.style.display = 'block';
   });
 
   // Xử lý chọn ngày trên lịch
@@ -170,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!selectedStartDate) {
         selectedStartDate = selectedMoment;
         e.target.classList.add('selected');
-      } else if (!selectedEndDate && selectedMoment.isAfter(selectedStartDate)) {
+      } else if (!selectedEndDate && (selectedMoment.isSame(selectedStartDate) || selectedMoment.isAfter(selectedStartDate))) {
         selectedEndDate = selectedMoment;
         const days = document.querySelectorAll('.calendar-day');
         days.forEach(day => {
@@ -210,9 +269,9 @@ document.addEventListener('DOMContentLoaded', () => {
       currentDate.add(1, 'day');
     }
 
-    // Hiển thị thanh tiến trình
-    calendarSection.style.display = 'none';
-    progressSection.style.display = 'block';
+    // Đóng overlay lịch và mở overlay tiến trình
+    calendarOverlay.style.display = 'none';
+    progressOverlay.style.display = 'flex';
     progressBar.style.width = '0%';
 
     // Giả lập tiến trình predict
@@ -263,22 +322,32 @@ document.addEventListener('DOMContentLoaded', () => {
           logMessage(`Lỗi khi lưu lịch sử dự đoán: ${error.message}`, 'error');
         }
 
+        // Đóng overlay tiến trình và mở overlay kết quả
+        progressOverlay.style.display = 'none';
+        resultOverlay.style.display = 'flex';
         displayResults();
       } catch (error) {
         logMessage(`Lỗi khi dự đoán: ${error.message}`, 'error');
-        progressSection.style.display = 'none';
+        progressOverlay.style.display = 'none';
       }
     }
   });
 
   // Hiển thị kết quả
   function displayResults() {
-    progressSection.style.display = 'none';
-    calendarSection.style.display = 'block';
-    resultSection.style.display = 'block';
+    calendarGridResult.innerHTML = '';
     resultDetails.innerHTML = '';
 
-    const days = document.querySelectorAll('.calendar-day');
+    // Hiển thị lịch chỉ với các ngày đã dự đoán
+    predictionDates.forEach(date => {
+      const dayDiv = document.createElement('div');
+      dayDiv.className = 'calendar-day';
+      dayDiv.dataset.date = date;
+      dayDiv.textContent = date;
+      calendarGridResult.appendChild(dayDiv);
+    });
+
+    const days = document.querySelectorAll('#calendar-grid-result .calendar-day');
     days.forEach(day => {
       const dayDate = day.dataset.date;
       const result = predictionResults.find(r => r[0] === dayDate);
@@ -303,7 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.URL.revokeObjectURL(url);
   });
 
-  // Hiển thị lịch
+  // Hiển thị lịch (30 ngày ban đầu)
   function displayCalendar(lastDate) {
     calendarGrid.innerHTML = '';
     const startDate = lastDate.clone().add(1, 'day');
@@ -409,7 +478,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message p-2 rounded-lg text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
     messageDiv.textContent = message;
-    logSection.appendChild(messageDiv);
-    logSection.scrollTop = logSection.scrollHeight;
+    logMessages.appendChild(messageDiv);
+    logMessages.scrollTop = logMessages.scrollHeight;
   }
 });

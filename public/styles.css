@@ -1,274 +1,4 @@
-/* Font chữ thanh lịch */
-body {
-  font-family: 'Roboto', sans-serif;
-  margin: 0;
-  min-height: 100vh;
-  color: #e5e5e5;
-  overflow-x: hidden;
-  position: relative;
-  background-image: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb');
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-}
-
-/* Overlay tối để làm nổi bật nội dung */
-body::after {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(18, 18, 18, 0.7);
-  z-index: -1;
-}
-
-/* Header section */
-.header-section {
-  background: rgba(30, 30, 30, 0.9);
-  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
-  position: relative;
-  z-index: 1;
-}
-
-/* Upload section */
-.upload-section {
-  background: transparent;
-  position: relative;
-  z-index: 1;
-}
-
-/* Calendar section */
-.calendar-section {
-  background: transparent;
-  position: relative;
-  z-index: 1;
-}
-
-/* Guide section */
-.guide-section {
-  background: transparent;
-  padding-bottom: 3rem;
-  position: relative;
-  z-index: 1;
-}
-
-/* Box upload */
-.upload-box {
-  position: relative;
-  border-radius: 15px;
-  padding: 2rem;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-  z-index: 1;
-  width: 100%;
-  max-width: 450px;
-  animation: slideUp 1s ease-out;
-  border: 1px solid rgba(212, 175, 55, 0.3);
-  background-image: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb');
-  background-size: cover;
-  background-position: center;
-}
-
-/* Calendar box */
-.calendar-box {
-  position: relative;
-  border-radius: 15px;
-  padding: 2rem;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-  z-index: 1;
-  width: 100%;
-  max-width: 450px;
-  animation: slideUp 1s ease-out;
-  border: 1px solid rgba(212, 175, 55, 0.3);
-  background-image: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb');
-  background-size: cover;
-  background-position: center;
-}
-
-/* Guide item */
-.guide-item {
-  position: relative;
-  border-radius: 10px;
-  transition: transform 0.3s ease;
-  background: #1e1e1e; /* Nền đen thuần */
-}
-
-/* Lớp phủ tối cho các box có hình nền */
-.upload-box::after,
-.calendar-box::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(18, 18, 18, 0.85);
-  z-index: -1;
-  border-radius: 15px;
-}
-
-/* Viền gradient cho box */
-.upload-box::before,
-.calendar-box::before {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  background: linear-gradient(45deg, #d4af37, #a3bffa, #d4af37);
-  z-index: -1;
-  border-radius: 17px;
-  opacity: 0.5;
-  animation: subtleGlow 5s infinite ease-in-out;
-}
-
-@keyframes subtleGlow {
-  0% { opacity: 0.3; }
-  50% { opacity: 0.7; }
-  100% { opacity: 0.3; }
-}
-
-@keyframes slideUp {
-  from { transform: translateY(50px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-/* Tiêu đề */
-.title {
-  font-family: 'Playfair Display', serif;
-  color: #e5e5e5;
-  text-shadow: 1px 1px 3px rgba(212, 175, 55, 0.2);
-}
-
-/* Guide item */
-.guide-item:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(212, 175, 55, 0.2);
-}
-
-/* Màu vàng kim */
-.text-gold {
-  color: #d4af37;
-}
-
-/* Input */
-.custom-input {
-  transition: all 0.3s ease;
-  position: relative;
-  background: rgba(45, 45, 45, 0.8);
-  border: 1px solid rgba(212, 175, 55, 0.3);
-  color: #e5e5e5;
-}
-
-.custom-input:focus {
-  border-color: #d4af37;
-  box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
-  background: rgba(53, 53, 53, 0.8);
-}
-
-/* Placeholder */
-.custom-input::placeholder {
-  color: #a0a0a0;
-}
-
-/* Hiệu ứng wave khi hover input */
-.input-wrapper {
-  position: relative;
-}
-
-.input-wrapper::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.2), transparent);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.input-wrapper:hover::after {
-  opacity: 1;
-  animation: wave 2s infinite;
-}
-
-@keyframes wave {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-/* Icon trong input */
-.input-icon {
-  transition: transform 0.3s ease;
-  color: #a0a0a0;
-}
-
-.input-wrapper:hover .input-icon {
-  transform: translateY(-50%) scale(1.1);
-  color: #d4af37;
-}
-
-/* Button */
-.btn-upload {
-  position: relative;
-  background: linear-gradient(90deg, #d4af37, #a3bffa);
-  transition: all 0.3s ease;
-  overflow: hidden;
-  border: none;
-}
-
-.btn-upload:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(212, 175, 55, 0.4);
-}
-
-/* Loading spinner */
-.spinner {
-  display: none;
-  width: 24px;
-  height: 24px;
-  border: 3px solid #ffffff;
-  border-top: 3px solid #d4af37;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Progress bar */
-.bg-gold {
-  background: linear-gradient(90deg, #d4af37, #a3bffa);
-}
-
-/* Calendar styles */
-#calendar .calendar-day {
-  border: 1px solid rgba(212, 175, 55, 0.2);
-  padding: 1rem;
-  text-align: center;
-  cursor: pointer;
-  transition: transform 0.3s ease, background 0.3s ease;
-}
-
-#calendar .calendar-day:hover {
-  transform: scale(1.05);
-  background: rgba(53, 53, 53, 0.8);
-  box-shadow: 0 5px 15px rgba(212, 175, 55, 0.2);
-}
-
-#calendar .calendar-day.active {
-  background: linear-gradient(45deg, #d4af37, #a3bffa);
-  color: #121212;
-  border-color: #d4af37;
-}
-
-/* Hiệu ứng fade-in cho message */
+/* Hiệu ứng fade-in cho overlay và message */
 .message {
   animation: fadeIn 0.5s ease-in-out;
 }
@@ -276,4 +6,205 @@ body::after {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Container cho các hình khối động */
+.shapes-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 0;
+}
+
+/* Các hình khối động */
+.shape {
+  position: absolute;
+}
+
+.shape-1 {
+  top: 10%;
+  left: 20%;
+  animation: float 10s infinite linear;
+}
+
+.shape-2 {
+  top: 30%;
+  right: 15%;
+  animation: float 12s infinite linear;
+}
+
+.shape-3 {
+  bottom: 20%;
+  left: 40%;
+  animation: float 8s infinite linear;
+}
+
+.shape-4 {
+  top: 50%;
+  left: 70%;
+  animation: float 15s infinite linear;
+}
+
+.shape-5 {
+  bottom: 10%;
+  right: 30%;
+  animation: float 11s infinite linear;
+}
+
+.shape-6 {
+  top: 15%;
+  left: 50%;
+  animation: float 9s infinite linear;
+}
+
+.shape-7 {
+  bottom: 25%;
+  right: 20%;
+  animation: float-delayed 13s infinite linear;
+}
+
+.shape-8 {
+  top: 40%;
+  left: 10%;
+  animation: float 7s infinite linear;
+}
+
+.shape-9 {
+  bottom: 5%;
+  left: 60%;
+  animation: float-delayed 14s infinite linear;
+}
+
+.shape-10 {
+  top: 60%;
+  right: 10%;
+  animation: float 16s infinite linear;
+}
+
+.shape-11 {
+  top: 5%;
+  left: 30%;
+  animation: float 10s infinite linear;
+}
+
+.shape-12 {
+  top: 70%;
+  right: 25%;
+  animation: float-delayed 12s infinite linear;
+}
+
+.shape-13 {
+  bottom: 15%;
+  left: 15%;
+  animation: float 9s infinite linear;
+}
+
+.shape-14 {
+  top: 25%;
+  left: 80%;
+  animation: float-delayed 11s infinite linear;
+}
+
+.shape-15 {
+  bottom: 30%;
+  right: 5%;
+  animation: float 13s infinite linear;
+}
+
+.shape-16 {
+  top: 45%;
+  left: 25%;
+  animation: float 8s infinite linear;
+}
+
+.shape-17 {
+  bottom: 40%;
+  right: 35%;
+  animation: float-delayed 14s infinite linear;
+}
+
+.shape-18 {
+  top: 55%;
+  left: 65%;
+  animation: float 10s infinite linear;
+}
+
+.shape-19 {
+  bottom: 35%;
+  left: 45%;
+  animation: float-delayed 12s infinite linear;
+}
+
+.shape-20 {
+  top: 20%;
+  right: 40%;
+  animation: float 15s infinite linear;
+}
+
+@keyframes float {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(50px, 50px) rotate(90deg);
+  }
+  50% {
+    transform: translate(0, 100px) rotate(180deg);
+  }
+  75% {
+    transform: translate(-50px, 50px) rotate(270deg);
+  }
+  100% {
+    transform: translate(0, 0) rotate(360deg);
+  }
+}
+
+@keyframes float-delayed {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(-50px, -50px) rotate(90deg);
+  }
+  50% {
+    transform: translate(0, -100px) rotate(180deg);
+  }
+  75% {
+    transform: translate(50px, -50px) rotate(270deg);
+  }
+  100% {
+    transform: translate(0, 0) rotate(360deg);
+  }
+}
+
+/* Style cho các ô ngày trong lịch */
+.calendar-day {
+  padding: 10px;
+  background: rgba(45, 45, 45, 0.8);
+  color: #e5e5e5;
+  text-align: center;
+  border-radius: 4px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  cursor: pointer;
+  transition: transform 0.3s ease, background 0.3s ease;
+}
+
+.calendar-day:hover {
+  transform: scale(1.05);
+  background: rgba(53, 53, 53, 0.8);
+  box-shadow: 0 5px 15px rgba(212, 175, 55, 0.2);
+}
+
+.calendar-day.selected {
+  background: linear-gradient(45deg, #d4af37, #a3bffa);
+  color: #121212;
+  border-color: #d4af37;
 }

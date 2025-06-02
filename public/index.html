@@ -6,195 +6,119 @@
   <title>Dự Đoán Lượng Nước</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
-  <style>
-    /* Font chữ thanh lịch */
-    body {
-      font-family: 'Roboto', sans-serif;
-      margin: 0;
-      min-height: 100vh;
-      color: #e5e5e5;
-      background: #111827;
-    }
-
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 1.5rem;
-    }
-
-    /* Các section chính */
-    #input-section, #log-section, #calendar-section, #progress-section, #result-section {
-      background: rgba(30, 30, 30, 0.9);
-      border-radius: 15px;
-      padding: 2rem;
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-      margin-bottom: 20px;
-      border: 1px solid rgba(212, 175, 55, 0.3);
-      animation: fadeIn 0.5s ease-in-out;
-    }
-
-    /* Log section */
-    #log-section {
-      max-height: 200px;
-      overflow-y: auto;
-    }
-
-    /* Calendar grid */
-    #calendar-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 5px;
-    }
-
-    .calendar-day {
-      padding: 10px;
-      background: rgba(45, 45, 45, 0.8);
-      color: #e5e5e5;
-      text-align: center;
-      border-radius: 4px;
-      border: 1px solid rgba(212, 175, 55, 0.2);
-      cursor: pointer;
-      transition: transform 0.3s ease, background 0.3s ease;
-    }
-
-    .calendar-day:hover {
-      transform: scale(1.05);
-      background: rgba(53, 53, 53, 0.8);
-      box-shadow: 0 5px 15px rgba(212, 175, 55, 0.2);
-    }
-
-    .calendar-day.selected {
-      background: linear-gradient(45deg, #d4af37, #a3bffa);
-      color: #121212;
-      border-color: #d4af37;
-    }
-
-    /* Progress bar */
-    #progress-bar {
-      width: 0%;
-      height: 20px;
-      background: linear-gradient(90deg, #d4af37, #a3bffa);
-      transition: width 0.3s ease;
-      border-radius: 10px;
-    }
-
-    /* Result details */
-    #result-details {
-      margin-top: 10px;
-      padding: 10px;
-      background: rgba(45, 45, 45, 0.8);
-      color: #e5e5e5;
-      border-radius: 4px;
-    }
-
-    /* Input và button */
-    .custom-input {
-      transition: all 0.3s ease;
-      background: rgba(45, 45, 45, 0.8);
-      border: 1px solid rgba(212, 175, 55, 0.3);
-      color: #e5e5e5;
-      border-radius: 4px;
-      padding: 8px;
-      width: 100%;
-    }
-
-    .custom-input:focus {
-      border-color: #d4af37;
-      box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
-      background: rgba(53, 53, 53, 0.8);
-    }
-
-    .custom-input::placeholder {
-      color: #a0a0a0;
-    }
-
-    .btn-custom {
-      background: linear-gradient(90deg, #d4af37, #a3bffa);
-      color: #121212;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 4px;
-      transition: all 0.3s ease;
-    }
-
-    .btn-custom:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(212, 175, 55, 0.4);
-    }
-
-    /* Tiêu đề */
-    .title {
-      font-family: 'Playfair Display', serif;
-      color: #e5e5e5;
-      text-shadow: 1px 1px 3px rgba(212, 175, 55, 0.2);
-    }
-
-    /* Màu vàng kim */
-    .text-gold {
-      color: #d4af37;
-    }
-
-    /* Hiệu ứng fade-in cho message */
-    .message {
-      animation: fadeIn 0.5s ease-in-out;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-  <div class="container">
-    <!-- Phần nhập liệu -->
-    <div id="input-section">
-      <h2 class="title text-2xl font-bold mb-4">Nhập Dữ Liệu Đầu Vào</h2>
-      <div class="mb-4">
-        <label class="block mb-2">Ảnh (RGB):</label>
-        <input id="image-input" type="file" accept="image/*" class="custom-input">
-      </div>
-      <div class="mb-4">
-        <label class="block mb-2">File CSV (Metadata):</label>
-        <input id="csv-input" type="file" accept=".csv" class="custom-input">
-      </div>
-      <div class="mb-4">
-        <label class="block mb-2">Tháng/Năm của Ảnh (mm/yy, ví dụ: 09/24):</label>
-        <input id="mmyy-input" type="text" placeholder="mm/yy" class="custom-input">
-      </div>
-      <button id="predict-btn" class="btn-custom">Predict</button>
-    </div>
+<body class="bg-gray-900 text-gray-200 font-roboto min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
+  <!-- Container cho các hình khối động -->
+  <div class="shapes-container">
+    <div class="shape shape-1 w-16 h-16 bg-yellow-500 opacity-20 rounded-full absolute animate-float"></div>
+    <div class="shape shape-2 w-12 h-12 bg-blue-400 opacity-20 rounded-lg absolute animate-float-delayed"></div>
+    <div class="shape shape-3 w-20 h-20 bg-yellow-500 opacity-20 rounded-full absolute animate-float"></div>
+    <div class="shape shape-4 w-14 h-14 bg-blue-400 opacity-20 rounded-lg absolute animate-float-delayed"></div>
+    <div class="shape shape-5 w-10 h-10 bg-yellow-500 opacity-20 rounded-full absolute animate-float"></div>
+    <div class="shape shape-6 w-18 h-18 bg-yellow-500 opacity-20 rounded-full absolute animate-float-delayed"></div>
+    <div class="shape shape-7 w-15 h-15 bg-blue-400 opacity-20 rounded-lg absolute animate-float"></div>
+    <div class="shape shape-8 w-22 h-22 bg-yellow-500 opacity-20 rounded-full absolute animate-float-delayed"></div>
+    <div class="shape shape-9 w-13 h-13 bg-blue-400 opacity-20 rounded-lg absolute animate-float"></div>
+    <div class="shape shape-10 w-17 h-17 bg-yellow-500 opacity-20 rounded-full absolute animate-float-delayed"></div>
+    <div class="shape shape-11 w-16 h-16 bg-yellow-500 opacity-20 rounded-full absolute animate-float"></div>
+    <div class="shape shape-12 w-12 h-12 bg-blue-400 opacity-20 rounded-lg absolute animate-float-delayed"></div>
+    <div class="shape shape-13 w-20 h-20 bg-yellow-500 opacity-20 rounded-full absolute animate-float"></div>
+    <div class="shape shape-14 w-14 h-14 bg-blue-400 opacity-20 rounded-lg absolute animate-float-delayed"></div>
+    <div class="shape shape-15 w-10 h-10 bg-yellow-500 opacity-20 rounded-full absolute animate-float"></div>
+    <div class="shape shape-16 w-18 h-18 bg-yellow-500 opacity-20 rounded-full absolute animate-float-delayed"></div>
+    <div class="shape shape-17 w-15 h-15 bg-blue-400 opacity-20 rounded-lg absolute animate-float"></div>
+    <div class="shape shape-18 w-22 h-22 bg-yellow-500 opacity-20 rounded-full absolute animate-float-delayed"></div>
+    <div class="shape shape-19 w-13 h-13 bg-blue-400 opacity-20 rounded-lg absolute animate-float"></div>
+    <div class="shape shape-20 w-17 h-17 bg-yellow-500 opacity-20 rounded-full absolute animate-float-delayed"></div>
+  </div>
 
-    <!-- Phần hiển thị log kiểm tra -->
-    <div id="log-section">
-      <h3 class="title text-xl font-bold mb-2">Log Kiểm Tra</h3>
-      <div id="log-messages"></div>
+  <!-- Phần nhập liệu -->
+  <div id="input-section" class="bg-gray-800 bg-opacity-90 rounded-xl p-6 shadow-2xl border border-yellow-500 border-opacity-30 w-full max-w-md relative z-10">
+    <h2 class="text-2xl font-bold mb-6 text-center text-gray-100 font-['Playfair_Display']">Nhập Dữ Liệu Đầu Vào</h2>
+    <div class="mb-4">
+      <label class="block mb-2 text-sm font-medium">Ảnh (RGB):</label>
+      <input id="image-input" type="file" accept="image/*" class="w-full p-2 bg-gray-700 border border-yellow-500 border-opacity-30 rounded-lg text-gray-200 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500 focus:bg-gray-600">
+      <img id="image-preview" class="mt-2 rounded-lg hidden mx-auto" style="max-width: 150px;" alt="Ảnh xem trước">
     </div>
-
-    <!-- Phần hiển thị lịch -->
-    <div id="calendar-section">
-      <h3 class="title text-xl font-bold mb-2">Chọn Khoảng Ngày Dự Đoán (30 Ngày Tiếp Theo)</h3>
-      <div id="calendar-grid" class="mb-4"></div>
-      <div class="flex space-x-2">
-        <button id="confirm-dates-btn" class="btn-custom">Xác Nhận</button>
-      </div>
+    <div class="mb-4">
+      <label class="block mb-2 text-sm font-medium">File CSV (Metadata):</label>
+      <input id="csv-input" type="file" accept=".csv" class="w-full p-2 bg-gray-700 border border-yellow-500 border-opacity-30 rounded-lg text-gray-200 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500 focus:bg-gray-600">
     </div>
-
-    <!-- Thanh tiến trình -->
-    <div id="progress-section">
-      <h3 class="title text-xl font-bold mb-2">Tiến Trình Predict</h3>
-      <div class="w-full bg-gray-300 rounded-lg">
-        <div id="progress-bar" class="rounded-lg"></div>
-      </div>
+    <div class="mb-6">
+      <label class="block mb-2 text-sm font-medium">Tháng/Năm của Ảnh (mm/yy, ví dụ: 09/24):</label>
+      <input id="mmyy-input" type="text" placeholder="mm/yy" class="w-full p-2 bg-gray-700 border border-yellow-500 border-opacity-30 rounded-lg text-gray-200 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500 focus:bg-gray-600">
     </div>
-
-    <!-- Phần hiển thị kết quả -->
-    <div id="result-section">
-      <h3 class="title text-xl font-bold mb-2">Kết Quả Dự Đoán</h3>
-      <div id="result-details"></div>
-      <button id="download-result-btn" class="btn-custom mt-4">Tải Xuống Kết Quả (.csv)</button>
+    <div class="text-center">
+      <button id="predict-btn" class="bg-gradient-to-r from-yellow-500 to-blue-400 text-gray-900 px-6 py-2 rounded-lg hover:transform hover:-translate-y-1 hover:shadow-xl transition-all duration-300">Predict</button>
     </div>
   </div>
+
+  <!-- Phần hướng dẫn sử dụng -->
+  <div class="mt-8 w-full max-w-md relative z-10">
+    <h3 class="text-xl font-bold mb-4 text-center text-gray-100 font-['Playfair_Display']">Hướng Dẫn Sử Dụng Tool</h3>
+    <div class="bg-gray-800 bg-opacity-90 rounded-xl p-6 shadow-2xl border border-yellow-500 border-opacity-30 max-h-64 overflow-y-auto">
+      <p class="text-gray-300 mb-4 text-center">Tải về file CSV minh họa để hiểu định dạng dữ liệu cần nhập:</p>
+      <div class="text-center mb-4">
+        <a id="download-sample-csv" class="inline-block px-4 py-2 bg-yellow-500 text-gray-900 rounded-lg hover:bg-yellow-400 transition-all duration-300">Tải File CSV Minh Họa</a>
+      </div>
+      <h4 class="text-lg font-semibold text-yellow-400 mb-2">Các bước sử dụng:</h4>
+      <ol class="list-decimal list-inside text-gray-300 space-y-2 text-sm">
+        <li>Chọn một ảnh (định dạng RGB) bằng cách nhấn vào ô "Ảnh (RGB)".</li>
+        <li>Chọn file CSV chứa dữ liệu metadata (định dạng như file minh họa).</li>
+        <li>Nhập tháng/năm của ảnh theo định dạng mm/yy (ví dụ: 09/24).</li>
+        <li>Nhấn nút "Predict" để bắt đầu quá trình dự đoán.</li>
+        <li>Xem log kiểm tra trong overlay, sau đó chọn khoảng ngày dự đoán từ lịch.</li>
+        <li>Sau khi dự đoán hoàn tất, xem kết quả và tải xuống file CSV nếu cần.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- Overlay cho log kiểm tra -->
+  <div id="log-overlay" class="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50" style="display: none;">
+    <div class="bg-gray-800 bg-opacity-90 rounded-xl p-6 shadow-2xl border border-yellow-500 border-opacity-30 w-11/12 max-w-lg max-h-[80vh] overflow-y-auto relative">
+      <button id="log-close" class="absolute top-3 right-3 text-yellow-400 text-2xl hover:text-blue-400 transition-colors">✕</button>
+      <h3 class="text-xl font-bold mb-4 text-gray-100 font-['Playfair_Display']">Log Kiểm Tra</h3>
+      <div id="log-messages"></div>
+    </div>
+  </div>
+
+  <!-- Overlay cho lịch chọn ngày -->
+  <div id="calendar-overlay" class="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50" style="display: none;">
+    <div class="bg-gray-800 bg-opacity-90 rounded-xl p-6 shadow-2xl border border-yellow-500 border-opacity-30 w-11/12 max-w-lg max-h-[80vh] overflow-y-auto relative">
+      <button id="calendar-close" class="absolute top-3 right-3 text-yellow-400 text-2xl hover:text-blue-400 transition-colors">✕</button>
+      <h3 class="text-xl font-bold mb-4 text-gray-100 font-['Playfair_Display']">Chọn Khoảng Ngày Dự Đoán (30 Ngày Tiếp Theo)</h3>
+      <div id="calendar-grid" class="mb-4 grid grid-cols-7 gap-2"></div>
+      <div class="flex space-x-2 justify-center">
+        <button id="confirm-dates-btn" class="bg-gradient-to-r from-yellow-500 to-blue-400 text-gray-900 px-6 py-2 rounded-lg hover:transform hover:-translate-y-1 hover:shadow-xl transition-all duration-300">Xác Nhận</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay cho thanh tiến trình -->
+  <div id="progress-overlay" class="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50" style="display: none;">
+    <div class="bg-gray-800 bg-opacity-90 rounded-xl p-6 shadow-2xl border border-yellow-500 border-opacity-30 w-11/12 max-w-lg">
+      <h3 class="text-xl font-bold mb-4 text-gray-100 font-['Playfair_Display']">Tiến Trình Predict</h3>
+      <div class="w-full bg-gray-300 rounded-lg">
+        <div id="progress-bar" class="h-5 bg-gradient-to-r from-yellow-500 to-blue-400 rounded-lg transition-all duration-300"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay cho kết quả dự đoán -->
+  <div id="result-overlay" class="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50" style="display: none;">
+    <div class="bg-gray-800 bg-opacity-90 rounded-xl p-6 shadow-2xl border border-yellow-500 border-opacity-30 w-11/12 max-w-lg max-h-[80vh] overflow-y-auto relative">
+      <button id="result-close" class="absolute top-3 right-3 text-yellow-400 text-2xl hover:text-blue-400 transition-colors">✕</button>
+      <h3 class="text-xl font-bold mb-4 text-gray-100 font-['Playfair_Display']">Kết Quả Dự Đoán</h3>
+      <div id="calendar-grid-result" class="mb-4 grid grid-cols-7 gap-2"></div>
+      <div id="result-details" class="text-gray-300"></div>
+      <div class="text-center mt-4">
+        <button id="download-result-btn" class="bg-gradient-to-r from-yellow-500 to-blue-400 text-gray-900 px-6 py-2 rounded-lg hover:transform hover:-translate-y-1 hover:shadow-xl transition-all duration-300">Tải Xuống Kết Quả (.csv)</button>
+      </div>
+    </div>
+  </div>
+
   <script src="index.js"></script>
 </body>
 </html>

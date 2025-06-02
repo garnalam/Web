@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trang Phân Quyền Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-md5@0.7.3/src/md5.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-gray-900 text-gray-200 font-roboto min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
+  <!-- Container cho các hình khối động -->
+  <div class="shapes-container">
+    <div class="shape shape-1 w-16 h-16 bg-yellow-500 opacity-20 rounded-full absolute animate-float"></div>
+    <div class="shape shape-2 w-12 h-12 bg-blue-400 opacity-20 rounded-lg absolute animate-float-delayed"></div>
+    <div class="shape shape-3 w-20 h-20 bg-yellow-500 opacity-20 rounded-full absolute animate-float"></div>
+    <div class="shape shape-4 w-14 h-14 bg-blue-400 opacity-20 rounded-lg absolute animate-float-delayed"></div>
+    <div class="shape shape-5 w-10 h-10 bg-yellow-500 opacity-20 rounded-full absolute animate-float"></div>
+    <div class="shape shape-6 w-18 h-18 bg-yellow-500 opacity-20 rounded-full absolute animate-float-delayed"></div>
+    <div class="shape shape-7 w-15 h-15 bg-blue-400 opacity-20 rounded-lg absolute animate-float"></div>
+    <div class="shape shape-8 w-22 h-22 bg-yellow-500 opacity-20 rounded-full absolute animate-float-delayed"></div>
+    <div class="shape shape-9 w-13 h-13 bg-blue-400 opacity-20 rounded-lg absolute animate-float"></div>
+    <div class="shape shape-10 w-17 h-17 bg-yellow-500 opacity-20 rounded-full absolute animate-float-delayed"></div>
+    <div class="shape shape-11 w-16 h-16 bg-yellow-500 opacity-20 rounded-full absolute animate-float"></div>
+    <div class="shape shape-12 w-12 h-12 bg-blue-400 opacity-20 rounded-lg absolute animate-float-delayed"></div>
+    <div class="shape shape-13 w-20 h-20 bg-yellow-500 opacity-20 rounded-full absolute animate-float"></div>
+    <div class="shape shape-14 w-14 h-14 bg-blue-400 opacity-20 rounded-lg absolute animate-float-delayed"></div>
+    <div class="shape shape-15 w-10 h-10 bg-yellow-500 opacity-20 rounded-full absolute animate-float"></div>
+    <div class="shape shape-16 w-18 h-18 bg-yellow-500 opacity-20 rounded-full absolute animate-float-delayed"></div>
+    <div class="shape shape-17 w-15 h-15 bg-blue-400 opacity-20 rounded-lg absolute animate-float"></div>
+    <div class="shape shape-18 w-22 h-22 bg-yellow-500 opacity-20 rounded-full absolute animate-float-delayed"></div>
+    <div class="shape shape-19 w-13 h-13 bg-blue-400 opacity-20 rounded-lg absolute animate-float"></div>
+    <div class="shape shape-20 w-17 h-17 bg-yellow-500 opacity-20 rounded-full absolute animate-float-delayed"></div>
+  </div>
+
+  <!-- Giao diện đăng nhập -->
+  <div id="login-section" class="bg-gray-800 bg-opacity-90 rounded-xl p-6 shadow-2xl border border-yellow-500 border-opacity-30 w-full max-w-md relative z-10">
+    <h2 class="text-2xl font-bold mb-6 text-center text-gray-100 font-['Playfair_Display']">Đăng Nhập Admin</h2>
+    <div class="mb-4">
+      <label class="block mb-2 text-sm font-medium">Mật khẩu:</label>
+      <input id="password-input" type="password" class="w-full p-2 bg-gray-700 border border-yellow-500 border-opacity-30 rounded-lg text-gray-200 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500 focus:bg-gray-600">
+    </div>
+    <div class="text-center">
+      <button id="login-btn" class="bg-gradient-to-r from-yellow-500 to-blue-400 text-gray-900 px-6 py-2 rounded-lg hover:transform hover:-translate-y-1 hover:shadow-xl transition-all duration-300">Đăng Nhập</button>
+    </div>
+  </div>
+
+  <!-- Giao diện admin -->
+  <div id="admin-section" class="hidden bg-gray-800 bg-opacity-90 rounded-xl p-6 shadow-2xl border border-yellow-500 border-opacity-30 w-full max-w-4xl relative z-10">
+    <h2 class="text-2xl font-bold mb-6 text-center text-gray-100 font-['Playfair_Display']">Trang Phân Quyền Admin</h2>
+    <div class="flex justify-between mb-6">
+      <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-400 transition-all duration-300">Đăng Xuất</button>
+      <button id="change-password-btn" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-400 transition-all duration-300">Đổi Mật Khẩu</button>
+    </div>
+    <div class="grid grid-cols-3 gap-4">
+      <button id="image-btn" class="bg-gradient-to-r from-yellow-500 to-blue-400 text-gray-900 px-6 py-3 rounded-lg hover:transform hover:-translate-y-1 hover:shadow-xl transition-all duration-300">Image</button>
+      <button id="metadata-btn" class="bg-gradient-to-r from-yellow-500 to-blue-400 text-gray-900 px-6 py-3 rounded-lg hover:transform hover:-translate-y-1 hover:shadow-xl transition-all duration-300">Metadata</button>
+      <button id="prediction-btn" class="bg-gradient-to-r from-yellow-500 to-blue-400 text-gray-900 px-6 py-3 rounded-lg hover:transform hover:-translate-y-1 hover:shadow-xl transition-all duration-300">Prediction</button>
+    </div>
+  </div>
+
+  <!-- Overlay đổi mật khẩu -->
+  <div id="change-password-overlay" class="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50" style="display: none;">
+    <div class="bg-gray-800 bg-opacity-90 rounded-xl p-6 shadow-2xl border border-yellow-500 border-opacity-30 w-11/12 max-w-md relative">
+      <button id="change-password-close" class="absolute top-3 right-3 text-yellow-400 text-2xl hover:text-blue-400 transition-colors">✕</button>
+      <h3 class="text-xl font-bold mb-4 text-gray-100 font-['Playfair_Display']">Đổi Mật Khẩu</h3>
+      <div class="mb-4">
+        <label class="block mb-2 text-sm font-medium">Mật khẩu mới:</label>
+        <input id="new-password-input" type="password" class="w-full p-2 bg-gray-700 border border-yellow-500 border-opacity-30 rounded-lg text-gray-200 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500 focus:bg-gray-600">
+      </div>
+      <div class="text-center">
+        <button id="confirm-change-password-btn" class="bg-gradient-to-r from-yellow-500 to-blue-400 text-gray-900 px-6 py-2 rounded-lg hover:transform hover:-translate-y-1 hover:shadow-xl transition-all duration-300">Xác Nhận</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay hiển thị danh sách bản ghi -->
+  <div id="records-overlay" class="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50" style="display: none;">
+    <div class="bg-gray-800 bg-opacity-90 rounded-xl p-6 shadow-2xl border border-yellow-500 border-opacity-30 w-11/12 max-w-4xl max-h-[80vh] overflow-y-auto relative">
+      <button id="records-close" class="absolute top-3 right-3 text-yellow-400 text-2xl hover:text-blue-400 transition-colors">✕</button>
+      <h3 id="records-title" class="text-xl font-bold mb-4 text-gray-100 font-['Playfair_Display']"></h3>
+      <div id="records-list" class="space-y-4"></div>
+      <div id="pagination" class="mt-4 flex justify-center items-center space-x-2"></div>
+    </div>
+  </div>
+
+  <!-- Overlay chỉnh sửa bản ghi -->
+  <div id="edit-record-overlay" class="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50" style="display: none;">
+    <div class="bg-gray-800 bg-opacity-90 rounded-xl p-6 shadow-2xl border border-yellow-500 border-opacity-30 w-11/12 max-w-md max-h-[80vh] overflow-y-auto relative">
+      <button id="edit-record-close" class="absolute top-3 right-3 text-yellow-400 text-2xl hover:text-blue-400 transition-colors">✕</button>
+      <h3 id="edit-record-title" class="text-xl font-bold mb-4 text-gray-100 font-['Playfair_Display']"></h3>
+      <div id="edit-record-form" class="space-y-4"></div>
+      <div class="text-center mt-4">
+        <button id="save-edit-btn" class="bg-gradient-to-r from-yellow-500 to-blue-400 text-gray-900 px-6 py-2 rounded-lg hover:transform hover:-translate-y-1 hover:shadow-xl transition-all duration-300">Sửa</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>

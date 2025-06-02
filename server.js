@@ -4,8 +4,8 @@ const multer = require('multer');
 const dotenv = require('dotenv');
 const moment = require('moment');
 const path = require('path');
-const fs = require('fs').promises;
 const mime = require('mime-types');
+const session = require('express-session');
 
 dotenv.config();
 
@@ -102,15 +102,7 @@ const predictionSchema = new mongoose.Schema({
     required: true,
     ref: 'image'
   },
-  predicted_date: {
-    type: String,
-    required: true,
-    match: /^\d{2}\/\d{2}\/\d{2}$/
-  },
-  water_estimate: {
-    type: Number,
-    required: true
-  }
+  predictions: [[String, Number]] // Danh sách các tuple ["predicted_date", water_estimate]
 }, { collection: 'prediction', versionKey: false });
 
 const Prediction = mongoose.model('Prediction', predictionSchema);
@@ -132,12 +124,65 @@ const upload = multer({
 // Middleware
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(session({
+  secret: 'your-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false }
+}));
 
 // Log request
 app.use((req, res, next) => {
   console.log(`Nhận request: ${req.method} ${req.url}`);
   next();
 });
+
+// Mật khẩu mặc định (mã hóa MD5 của "admin123")
+let adminPasswordHash = '0192023a7bbd73250516f069df18b500';
+
+// Route kiểm tra đăng nhập
+app.post('/admin/login', (req, res) => {
+  const { passwordHash } = req.body;
+  if (passwordHash === adminPasswordHash) {
+    req.session.isAuthenticated = true;
+    res.status(200).json({ message: 'Đăng nhập thành công' });
+  } else {
+    res.status(401).json({ message: 'Mật khẩu không đúng' });
+  }
+});
+
+// Route kiểm tra trạng thái đăng nhập
+app.get('/admin/check-auth', (req, res) => {
+  if (req.session.isAuthenticated) {
+    res.status(200).json({ isAuthenticated: true });
+  } else {
+    res.status(200).json({ isAuthenticated: false });
+  }
+});
+
+// Route đăng xuất
+app.post('/admin/logout', (req, res) => {
+  req.session.destroy();
+  res.status(200).json({ message: 'Đăng xuất thành công' });
+});
+
+// Route đổi mật khẩu
+app.post('/admin/change-password', (req, res) => {
+  if (!req.session.isAuthenticated) {
+    return res.status(401).json({ message: 'Chưa đăng nhập' });
+  }
+  const { newPasswordHash } = req.body;
+  adminPasswordHash = newPasswordHash;
+  res.status(200).json({ message: 'Đổi mật khẩu thành công' });
+});
+
+// Middleware kiểm tra đăng nhập cho các route admin
+const requireAuth = (req, res, next) => {
+  if (!req.session.isAuthenticated) {
+    return res.status(401).json({ message: 'Chưa đăng nhập' });
+  }
+  next();
+};
 
 // Route upload ảnh
 app.post('/upload', upload.single('image'), async (req, res) => {
@@ -218,30 +263,6 @@ app.post('/upload', upload.single('image'), async (req, res) => {
     }
     console.log('File đã được lưu vào fs.files:', fileDoc);
 
-    const chunks = await conn.db.collection('fs.chunks').find({ files_id: fileId }).sort({ n: 1 }).toArray();
-    if (chunks.length === 0) {
-      throw new Error('Không tìm thấy chunk nào trong fs.chunks sau khi upload');
-    }
-    console.log(`Số chunk trong fs.chunks: ${chunks.length}`);
-
-    const tempDir = path.join(__dirname, 'temp_chunks');
-    await fs.mkdir(tempDir, { recursive: true });
-
-    const chunkFiles = [];
-    for (const chunk of chunks) {
-      const chunkData = {
-        n: chunk.n,
-        files_id: chunk.files_id.toString(),
-        mimeType: mimeType,
-        data: chunk.data.buffer.toString('base64')
-      };
-      const chunkFileName = `chunk_${chunk.n}_${fileId}.json`;
-      const chunkFilePath = path.join(tempDir, chunkFileName);
-      await fs.writeFile(chunkFilePath, JSON.stringify(chunkData, null, 2));
-      chunkFiles.push({ fileName: chunkFileName, filePath: chunkFilePath });
-      console.log(`Đã tạo file JSON cho chunk ${chunk.n}: ${chunkFilePath}`);
-    }
-
     const newImage = new Image({
       date: isoDate,
       'mm/yy': dateMMYY,
@@ -255,11 +276,7 @@ app.post('/upload', upload.single('image'), async (req, res) => {
     res.status(201).json({
       message: 'Tải ảnh lên thành công',
       file_id: fileId.toString(),
-      image_id: newImage._id.toString(),
-      chunk_files: chunkFiles.map(file => ({
-        fileName: file.fileName,
-        downloadUrl: `/download-chunk/${file.fileName}`
-      }))
+      image_id: newImage._id.toString()
     });
   } catch (error) {
     console.error('Lỗi khi tải ảnh:', error);
@@ -413,42 +430,18 @@ app.post('/save-prediction', async (req, res) => {
       return res.status(400).json({ message: 'Danh sách predictions không hợp lệ' });
     }
 
-    const predictionRecords = predictions.map(prediction => ({
+    const predictionRecord = {
       id_metadata: metadata_ids.map(id => new mongoose.Types.ObjectId(id)),
       id_image: new mongoose.Types.ObjectId(image_id),
-      predicted_date: prediction[0], // Định dạng dd/mm/yy
-      water_estimate: prediction[1]
-    }));
+      predictions: predictions // Danh sách các tuple ["predicted_date", water_estimate]
+    };
 
-    const savedPredictions = await Prediction.insertMany(predictionRecords);
-    console.log(`Đã lưu ${savedPredictions.length} bản ghi prediction`);
+    const savedPrediction = await Prediction.create(predictionRecord);
+    console.log('Đã lưu prediction:', savedPrediction);
     res.status(201).json({ message: 'Lưu prediction thành công' });
   } catch (error) {
     console.error('Lỗi khi lưu prediction:', error);
     res.status(500).json({ message: 'Lỗi khi lưu prediction', error: error.message });
-  }
-});
-
-// Route tải file JSON chunk
-app.get('/download-chunk/:fileName', async (req, res) => {
-  try {
-    const fileName = req.params.fileName;
-    const filePath = path.join(__dirname, 'temp_chunks', fileName);
-    res.download(filePath, fileName, async (err) => {
-      if (err) {
-        console.error('Lỗi khi tải file JSON:', err);
-        res.status(500).json({ message: 'Lỗi khi tải file JSON', error: err.message });
-      }
-      try {
-        await fs.unlink(filePath);
-        console.log(`Đã xóa file tạm: ${filePath}`);
-      } catch (unlinkErr) {
-        console.error('Lỗi khi xóa file tạm:', unlinkErr);
-      }
-    });
-  } catch (error) {
-    console.error('Lỗi khi tải file JSON:', error);
-    res.status(500).json({ message: 'Lỗi khi tải file JSON', error: error.message });
   }
 });
 
@@ -537,6 +530,199 @@ app.get('/get-image/:fileId', async (req, res) => {
   } catch (error) {
     console.error('Lỗi khi tải ảnh:', error);
     res.status(500).json({ message: 'Lỗi khi tải ảnh', error: error.message });
+  }
+});
+
+// Route lấy danh sách bản ghi (phân trang) từ collection image
+app.get('/admin/images', requireAuth, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = 5;
+    const skip = (page - 1) * limit;
+
+    const totalRecords = await Image.countDocuments();
+    const images = await Image.find().skip(skip).limit(limit).lean();
+
+    res.status(200).json({
+      records: images,
+      totalRecords,
+      totalPages: Math.ceil(totalRecords / limit),
+      currentPage: page
+    });
+  } catch (error) {
+    console.error('Lỗi khi lấy danh sách bản ghi image:', error);
+    res.status(500).json({ message: 'Lỗi khi lấy danh sách bản ghi image', error: error.message });
+  }
+});
+
+// Route lấy danh sách bản ghi (phân trang) từ collection metadata
+app.get('/admin/metadata', requireAuth, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = 5;
+    const skip = (page - 1) * limit;
+
+    const totalRecords = await Metadata.countDocuments();
+    const metadata = await Metadata.find().skip(skip).limit(limit).lean();
+
+    res.status(200).json({
+      records: metadata,
+      totalRecords,
+      totalPages: Math.ceil(totalRecords / limit),
+      currentPage: page
+    });
+  } catch (error) {
+    console.error('Lỗi khi lấy danh sách bản ghi metadata:', error);
+    res.status(500).json({ message: 'Lỗi khi lấy danh sách bản ghi metadata', error: error.message });
+  }
+});
+
+// Route lấy danh sách bản ghi (phân trang) từ collection prediction
+app.get('/admin/predictions', requireAuth, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = 5;
+    const skip = (page - 1) * limit;
+
+    const totalRecords = await Prediction.countDocuments();
+    const predictions = await Prediction.find().skip(skip).limit(limit).lean();
+
+    res.status(200).json({
+      records: predictions,
+      totalRecords,
+      totalPages: Math.ceil(totalRecords / limit),
+      currentPage: page
+    });
+  } catch (error) {
+    console.error('Lỗi khi lấy danh sách bản ghi prediction:', error);
+    res.status(500).json({ message: 'Lỗi khi lấy danh sách bản ghi prediction', error: error.message });
+  }
+});
+
+// Route cập nhật bản ghi trong collection image
+app.put('/admin/image/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { mm_yy } = req.body;
+    const updatedImage = await Image.findByIdAndUpdate(
+      id,
+      { 'mm/yy': mm_yy },
+      { new: true }
+    );
+    if (!updatedImage) {
+      return res.status(404).json({ message: 'Không tìm thấy bản ghi' });
+    }
+    res.status(200).json({ message: 'Cập nhật thành công', record: updatedImage });
+  } catch (error) {
+    console.error('Lỗi khi cập nhật bản ghi image:', error);
+    res.status(500).json({ message: 'Lỗi khi cập nhật bản ghi image', error: error.message });
+  }
+});
+
+// Route xóa bản ghi trong collection image
+app.delete('/admin/image/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const image = await Image.findById(id);
+    if (!image) {
+      return res.status(404).json({ message: 'Không tìm thấy bản ghi' });
+    }
+
+    // Xóa dữ liệu liên quan trong fs.files và fs.chunks
+    await conn.db.collection('fs.files').deleteOne({ _id: image.id_file });
+    await conn.db.collection('fs.chunks').deleteMany({ files_id: image.id_file });
+
+    // Xóa bản ghi trong collection image
+    await Image.deleteOne({ _id: id });
+
+    res.status(200).json({ message: 'Xóa bản ghi thành công' });
+  } catch (error) {
+    console.error('Lỗi khi xóa bản ghi image:', error);
+    res.status(500).json({ message: 'Lỗi khi xóa bản ghi image', error: error.message });
+  }
+});
+
+// Route cập nhật bản ghi trong collection metadata
+app.put('/admin/metadata/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { dd, mm_yy, list_value } = req.body;
+
+    const metadata = await Metadata.findById(id);
+    if (!metadata) {
+      return res.status(404).json({ message: 'Không tìm thấy bản ghi' });
+    }
+
+    metadata.dd = dd;
+    metadata['mm/yy'] = mm_yy;
+
+    // Cập nhật list_value
+    if (Array.isArray(list_value)) {
+      metadata.list_value = list_value.map(item => ({
+        name: item[0],
+        value: item[1]
+      }));
+    }
+
+    await metadata.save();
+    res.status(200).json({ message: 'Cập nhật thành công', record: metadata });
+  } catch (error) {
+    console.error('Lỗi khi cập nhật bản ghi metadata:', error);
+    res.status(500).json({ message: 'Lỗi khi cập nhật bản ghi metadata', error: error.message });
+  }
+});
+
+// Route xóa bản ghi trong collection metadata
+app.delete('/admin/metadata/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const metadata = await Metadata.findByIdAndDelete(id);
+    if (!metadata) {
+      return res.status(404).json({ message: 'Không tìm thấy bản ghi' });
+    }
+    res.status(200).json({ message: 'Xóa bản ghi thành công' });
+  } catch (error) {
+    console.error('Lỗi khi xóa bản ghi metadata:', error);
+    res.status(500).json({ message: 'Lỗi khi xóa bản ghi metadata', error: error.message });
+  }
+});
+
+// Route cập nhật bản ghi trong collection prediction
+app.put('/admin/prediction/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { predictions } = req.body;
+
+    const prediction = await Prediction.findById(id);
+    if (!prediction) {
+      return res.status(404).json({ message: 'Không tìm thấy bản ghi' });
+    }
+
+    // Cập nhật predictions
+    if (Array.isArray(predictions)) {
+      prediction.predictions = predictions;
+    }
+
+    await prediction.save();
+    res.status(200).json({ message: 'Cập nhật thành công', record: prediction });
+  } catch (error) {
+    console.error('Lỗi khi cập nhật bản ghi prediction:', error);
+    res.status(500).json({ message: 'Lỗi khi cập nhật bản ghi prediction', error: error.message });
+  }
+});
+
+// Route xóa bản ghi trong collection prediction
+app.delete('/admin/prediction/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const prediction = await Prediction.findByIdAndDelete(id);
+    if (!prediction) {
+      return res.status(404).json({ message: 'Không tìm thấy bản ghi' });
+    }
+    res.status(200).json({ message: 'Xóa bản ghi thành công' });
+  } catch (error) {
+    console.error('Lỗi khi xóa bản ghi prediction:', error);
+    res.status(500).json({ message: 'Lỗi khi xóa bản ghi prediction', error: error.message });
   }
 });
 
