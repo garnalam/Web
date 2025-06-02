@@ -1,11 +1,11 @@
 const express = require('express');
-const mongoose = require('mongoose');
-const multer = require('multer');
-const dotenv = require('dotenv');
-const moment = require('moment');
-const path = require('path');
-const fs = require('fs').promises;
-const mime = require('mime-types');
+const mongoose = require('mongoose'); // MongoDB
+const multer = require('multer'); // Middleware để xử lý file upload
+const dotenv = require('dotenv'); // Thư viện để quản lý biến môi trường .env
+const moment = require('moment'); // Thư viện để xử lý ngày tháng
+const path = require('path'); // Thư viện để xử lý đường dẫn file
+const fs = require('fs').promises; // Thư viện để xử lý file hệ thống
+const mime = require('mime-types'); // Thư viện để xác định loại MIME của file (jpg, png, v.v.)
 
 dotenv.config();
 
