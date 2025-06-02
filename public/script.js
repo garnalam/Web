@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // Hiển thị spinner, ẩn text
+    // Hiển thị spinner
     btnText.textContent = 'Đang xử lý...';
     spinner.style.display = 'block';
     if (calendarSection) {
@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Chuẩn hóa định dạng ngày (thêm số 0 nếu thiếu)
+    // Chuẩn hóa định dạng ngày
     const parts = datetimeInput.split('/');
     if (parts.length === 3) {
       const day = parts[0].padStart(2, '0');
@@ -87,8 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
     formData.append('datetime', datetimeInput);
 
     try {
-      // Gửi request đến server với IP mới
-      const response = await fetch('localhost:5000/upload', {
+      const response = await fetch('http://localhost:5000/upload', {
         method: 'POST',
         body: formData
       });
@@ -97,7 +96,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (response.ok) {
         showMessage('Tải ảnh lên thành công!', 'success');
-        // Reset preview sau khi upload thành công
         previewImage.src = '';
         previewImage.classList.add('hidden');
         form.reset();
@@ -130,7 +128,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function showCalendar(startDate, days) {
     calendar.innerHTML = '';
     const startMoment = moment(startDate, 'DD/MM/YYYY');
-    // Tạo mực nước ngẫu nhiên có 3 chữ số (100-999) cho mỗi ngày
     const waterLevels = Array.from({ length: days }, () => Math.floor(Math.random() * 900) + 100);
 
     for (let i = 0; i < days; i++) {

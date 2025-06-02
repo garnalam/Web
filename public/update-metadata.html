@@ -1,119 +1,149 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Update Metadata - Sang Trọng & Lịch Sự</title>
+  <title>Quản Lý Metadata</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+  <style>
+    body {
+      background-color: #111827; /* bg-gray-900 */
+      color: #d1d5db; /* gray-300 */
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+    #password-section {
+      display: block;
+      max-width: 450px;
+      margin: 2rem auto;
+      background-color: #1f2937; /* gray-800 */
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      border: 1px solid #374151; /* gray-700 */
+    }
+    #metadata-section {
+      display: none;
+      min-height: 400px;
+      width: 100%;
+      padding: 20px;
+      background-color: #1f2937; /* gray-800 */
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      border: 1px solid #374151; /* gray-700 */
+    }
+    #records-list {
+      min-height: 200px;
+      width: 100%;
+      background-color: #ffffff; /* white */
+      padding: 10px;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    table.w-full {
+      background-color: #f9fafb; /* gray-50 */
+      color: #111827; /* gray-900 */
+      border: 1px solid #d1d5db; /* gray-300 */
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #d1d5db; /* gray-300 */
+      padding: 10px;
+      color: #111827; /* gray-900 */
+      text-align: left;
+    }
+    th {
+      background-color: #d1d5db; /* gray-300 */
+      font-weight: bold;
+    }
+    tr {
+      background-color: #f9fafb; /* gray-50 */
+    }
+    tr:nth-child(even) {
+      background-color: #f3f4f6; /* gray-100 */
+    }
+    tr:hover {
+      background-color: #e5e7eb; /* gray-200 */
+    }
+    .bg-gray-800 {
+      background-color: #1f2937;
+      color: #d1d5db; /* gray-300 */
+    }
+    .bg-gray-700 {
+      background-color: #374151;
+      color: #d1d5db; /* gray-300 */
+    }
+    button {
+      transition: background-color 0.2s ease, transform 0.1s ease;
+    }
+    button:hover {
+      transform: translateY(-1px);
+    }
+    input, button {
+      border-radius: 4px;
+    }
+  </style>
 </head>
 <body>
-  <!-- Header -->
-  <header class="header-section py-16 text-center">
-    <h1 class="text-5xl font-bold title mb-4">Quản Lý Metadata</h1>
-    <p class="text-lg text-gray-300 max-w-2xl mx-auto">
-      Quản lý, cập nhật và xóa metadata cho hệ thống ước lượng mực nước.
-    </p>
-  </header>
-
-  <!-- Password Section -->
-  <section class="password-section py-16">
-    <div class="max-w-md w-full upload-box p-8 mx-auto">
-      <h2 class="text-3xl font-bold text-center title mb-6">Nhập Mật Khẩu</h2>
-      <div class="space-y-6">
-        <div class="input-wrapper">
-          <label for="password" class="block text-sm font-medium text-gray-300 mb-2">Mật Khẩu</label>
-          <input type="password" id="password" name="password" placeholder="Nhập mật khẩu" 
-                 class="custom-input w-full p-3 pl-10 border rounded-lg">
-          <svg class="input-icon w-5 h-5 absolute top-[52px] left-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0-1.1.9-2 2-2s2 .9 2 2-2 4-2 4m0-4c0 1.1-.9 2-2 2s-2-.9-2-2m0 0c0-1.1.9-2 2-2m-6 6h12M6 18V8a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 01-2 2H8a2 2 0 01-2-2z" />
-          </svg>
-        </div>
-        <button id="access-btn" class="btn-upload w-full text-white font-semibold py-3 rounded-lg flex items-center justify-center">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-          </svg>
-          Truy Cập
-        </button>
-      </div>
+  <div class="container">
+    <!-- Phần nhập mật khẩu -->
+    <div id="password-section" class="max-w-md mx-auto p-6 rounded-lg shadow-lg">
+      <h2 class="text-2xl font-bold mb-4">Nhập Mật Khẩu</h2>
+      <form>
+        <input id="password" type="password" class="w-full p-2 mb-4 bg-gray-700 border border-gray-600 rounded-lg text-white" placeholder="Mật khẩu" required>
+        <button id="access-btn" type="submit" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg">Truy Cập</button>
+      </form>
     </div>
-  </section>
 
-  <!-- Metadata Management Section (Hidden Initially) -->
-  <section id="metadata-section" class="metadata-section py-16 hidden">
-    <div class="max-w-4xl mx-auto px-4">
-      <!-- Update Metadata -->
-      <div class="upload-box p-8 mb-8">
-        <h2 class="text-3xl font-bold text-center title mb-6">Cập Nhật Metadata</h2>
-        <div class="space-y-6">
-          <div class="input-wrapper">
-            <label for="metadata-file" class="block text-sm font-medium text-gray-300 mb-2">Upload File Metadata (JSON)</label>
-            <input type="file" id="metadata-file" name="metadata-file" accept=".json" 
-                   class="custom-input w-full p-3 pl-10 border rounded-lg">
-            <svg class="input-icon w-5 h-5 absolute top-[52px] left-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-            </svg>
-          </div>
-          <button id="update-metadata-btn" class="btn-upload w-full text-white font-semibold py-3 rounded-lg flex items-center justify-center">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
-            Cập Nhật
-          </button>
-          <div id="update-result" class="mt-6 text-center"></div>
-        </div>
+    <!-- Phần quản lý metadata -->
+    <div id="metadata-section" class="mt-6">
+      <h2 class="text-2xl font-bold mb-4">Quản Lý Metadata</h2>
+      <button id="create-metadata-btn" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg mb-4">+ Tạo Metadata Mới</button>
+      <button id="toggle-records-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg mb-4 flex items-center">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+        </svg>
+        Hiển Thị Danh Sách
+      </button>
+      <div id="records-list" class="mb-4"></div>
+      <div class="flex justify-between items-center">
+        <button id="prev-page" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-1 px-3 rounded-lg disabled:opacity-50" disabled>Trang Trước</button>
+        <span id="page-info" class="text-lg">Trang 1 / 1</span>
+        <button id="next-page" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-1 px-3 rounded-lg disabled:opacity-50" disabled>Trang Sau</button>
       </div>
 
-      <!-- Delete Excess Data -->
-      <div class="upload-box p-8 mb-8">
-        <h2 class="text-3xl font-bold text-center title mb-6">Quản Lý Dữ Liệu Ảnh</h2>
-        <div class="space-y-6">
-          <button id="toggle-records-btn" class="btn-upload w-full text-white font-semibold py-3 rounded-lg flex items-center justify-center">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-            Hiển Thị Danh Sách
-          </button>
-          <div id="records-list" class="space-y-4 hidden">
-            <!-- Danh sách bản ghi sẽ được thêm động bằng JS -->
+      <!-- Form tạo metadata mới -->
+      <div id="metadata-form-container" class="hidden mt-6 bg-gray-800 p-6 rounded-lg shadow-lg">
+        <h3 class="text-xl font-bold mb-4">Tạo Metadata Mới</h3>
+        <form id="metadata-form">
+          <button id="select-image-btn" type="button" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg mb-4">Chọn Ảnh Liên Kết</button>
+          <input id="date-input" type="text" class="w-full p-2 mb-4 bg-gray-700 border border-gray-600 rounded-lg text-white" placeholder="Ngày (dd/mm/yy, ví dụ: 25/08/23)" required>
+          <div id="values-container" class="mb-4"></div>
+          <button id="add-value-btn" type="button" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-1 px-3 rounded-lg mb-4">+ Thêm Value</button>
+          <div class="flex space-x-2">
+            <button id="update-metadata-btn" type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg">Update</button>
+            <button id="cancel-metadata-btn" type="button" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg">Hủy</button>
           </div>
-          <div id="pagination" class="flex justify-center space-x-2 mt-4">
-            <button id="prev-page" class="btn-upload text-white font-semibold py-2 px-4 rounded-lg">Trang Trước</button>
-            <span id="page-info" class="text-gray-300 py-2"></span>
-            <button id="next-page" class="btn-upload text-white font-semibold py-2 px-4 rounded-lg">Trang Sau</button>
-          </div>
-          <div id="delete-result" class="mt-6 text-center"></div>
-        </div>
+        </form>
       </div>
 
-      <!-- Guide for Updating Metadata -->
-      <div class="guide-item p-8">
-        <h2 class="text-3xl font-bold text-center title mb-6">Hướng Dẫn Cập Nhật Metadata</h2>
-        <div class="space-y-6 text-gray-300">
-          <div>
-            <h3 class="text-xl font-semibold text-gold mb-2">Bước 1: Chuẩn bị file JSON</h3>
-            <p>Chuẩn bị file JSON theo định dạng: <code>{"file_name": "ten_file.jpg", "date": "dd/mm/yy", "list_value": [["name1", "value1"], ...]}</code></p>
-          </div>
-          <div>
-            <h3 class="text-xl font-semibold text-gold mb-2">Bước 2: Upload file</h3>
-            <p>Chọn file JSON đã chuẩn bị và nhấn "Cập Nhật".</p>
-          </div>
-          <div>
-            <h3 class="text-xl font-semibold text-gold mb-2">Bước 3: Xem kết quả</h3>
-            <p>Kết quả cập nhật sẽ hiển thị ngay bên dưới. Nếu file_name không tồn tại, metadata sẽ không được thêm.</p>
-          </div>
-          <div>
-            <h3 class="text-xl font-semibold text-gold mb-2">File Demo</h3>
-            <p>Tải file demo: <a href="/demo.json" download class="text-gold underline">demo.json</a></p>
-          </div>
+      <!-- Bảng chọn ảnh liên kết -->
+      <div id="image-table-container" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-gray-800 p-6 rounded-lg max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+          <h3 class="text-xl font-bold mb-4">Chọn Ảnh Liên Kết</h3>
+          <table id="image-table" class="w-full text-left border-collapse"></table>
+          <button id="close-image-table" class="mt-4 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg">Đóng</button>
         </div>
       </div>
     </div>
-  </section>
-
-  <!-- Include Moment.js from CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+  </div>
   <script src="update-metadata.js"></script>
 </body>
 </html>
